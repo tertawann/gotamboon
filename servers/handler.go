@@ -7,11 +7,10 @@ import (
 	"time"
 
 	"github.com/gotamboon/modules/donator"
+	"github.com/gotamboon/modules/entities"
 	"github.com/gotamboon/modules/omisetor"
 	"github.com/gotamboon/pkg/cipher"
 )
-
-var wg sync.WaitGroup
 
 // Handler error
 func (s *Server) Handler(file string) error {
@@ -21,35 +20,41 @@ func (s *Server) Handler(file string) error {
 	}
 
 	donator := donator.NewDonator()
-	donationList, err := donator.List(decryptedFile)
+	err = donator.List(decryptedFile)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	omisetor := omisetor.NewOmiseClient(os.Getenv("OMISE_PUBLIC_KEY"), os.Getenv("OMISE_SECRET_KEY"))
+	omiseTor := omisetor.NewOmiseClient(os.Getenv("OMISE_PUBLIC_KEY"), os.Getenv("OMISE_SECRET_KEY"))
 
 	fmt.Println("performing donations...")
 
-	start := time.Now()
+	// current coding manage rate limit of goroutine
+	var wg sync.WaitGroup
 
-	for i := 0; i < 1; i++ {
+	limiter := time.NewTicker(300 * time.Millisecond)
+	defer limiter.Stop()
 
-		for _, donation := range donationList[(i * 5) : (i+1)*5] {
-			wg.Add(1)
-
-			go donator.PerformDonations(omisetor, donation, &wg)
-
-		}
-
-		time.Sleep(1 * time.Second)
-
+	for _, donation := range donator.GetList() {
+		wg.Add(1)
+		go createPerformDonations(omiseTor, donation, donator, &wg, limiter)
 	}
 
 	wg.Wait()
-
 	donator.SummaryDisplay()
 
-	fmt.Println(time.Since(start))
+	return nil
+}
+
+func createPerformDonations(om *omisetor.Omise, donation *entities.Donation, dt *donator.Donator, wg *sync.WaitGroup, limit *time.Ticker) error {
+	defer wg.Done()
+
+	<-limit.C
+	err := dt.PerformDonations(om, donation)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 
 	return nil
 }

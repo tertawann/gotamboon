@@ -3,7 +3,6 @@ package donator
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gotamboon/modules/entities"
@@ -31,7 +30,11 @@ func NewDonator() *Donator {
 	}
 }
 
-func (d *Donator) List(dc string) ([]*entities.Donation, error) {
+func (d *Donator) GetList() []*entities.Donation {
+	return d.donationList[:200]
+}
+
+func (d *Donator) List(dc string) error {
 
 	rows := strings.Split(dc, "\n")
 
@@ -64,26 +67,26 @@ func (d *Donator) List(dc string) ([]*entities.Donation, error) {
 		})
 	}
 
-	return d.donationList, nil
+	return nil
 }
 
-// current coding manage rate limit of goroutine
-func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donation, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donation) error {
 
 	card, err := om.GenerateToken(donation)
 	if err != nil {
-		fmt.Printf("failed to generate token for donator %s: %v", donation.Name, err)
-		time.Sleep(1 * time.Second)
+		return err
 	}
 
 	charge, err := om.CreateChargeByToken(donation, card.ID)
+	fmt.Printf("%s charge status : %s\n", donation.Name, charge.Status)
+
 	if err != nil {
-		fmt.Printf("failed to create charge for donator %s: %v", donation.Name, err)
-		time.Sleep(1 * time.Second)
+		return fmt.Errorf("%s failed to generate token for donator", donation.Name)
 	}
 
 	d.updateSummary(charge, donation)
+
+	return nil
 }
 
 func (d *Donator) updateSummary(charge *omise.Charge, donation *entities.Donation) {
