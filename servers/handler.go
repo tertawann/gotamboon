@@ -12,7 +12,8 @@ import (
 	"github.com/gotamboon/pkg/cipher"
 )
 
-// Handler error
+var wg sync.WaitGroup
+
 func (s *Server) Handler(file string) error {
 	decryptedFile, err := Decrypt(file)
 	if err != nil {
@@ -29,10 +30,7 @@ func (s *Server) Handler(file string) error {
 
 	fmt.Println("performing donations...")
 
-	// current coding manage rate limit of goroutine
-	var wg sync.WaitGroup
-
-	limiter := time.NewTicker(300 * time.Millisecond)
+	limiter := time.NewTicker(260 * time.Millisecond)
 	defer limiter.Stop()
 
 	for _, donation := range donator.GetList() {

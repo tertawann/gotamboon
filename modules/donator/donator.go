@@ -14,8 +14,7 @@ import (
 	"github.com/omise/omise-go"
 )
 
-// Refactoring
-
+// current coding : handle error, refactoring and recheck name func, file, etc.
 type Donator struct {
 	donationList []*entities.Donation
 	rankings     map[string]*entities.DonatorRanking
@@ -31,7 +30,7 @@ func NewDonator() *Donator {
 }
 
 func (d *Donator) GetList() []*entities.Donation {
-	return d.donationList[:200]
+	return d.donationList[:3]
 }
 
 func (d *Donator) List(dc string) error {
@@ -78,33 +77,37 @@ func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donati
 	}
 
 	charge, err := om.CreateChargeByToken(donation, card.ID)
-	fmt.Printf("%s charge status : %s\n", donation.Name, charge.Status)
 
 	if err != nil {
 		return fmt.Errorf("%s failed to generate token for donator", donation.Name)
 	}
 
-	d.updateSummary(charge, donation)
+	d.updateSummary(charge)
+	d.updateRanking(charge, donation)
 
 	return nil
 }
 
-func (d *Donator) updateSummary(charge *omise.Charge, donation *entities.Donation) {
+func (d *Donator) updateSummary(charge *omise.Charge) {
 	d.summarys.TotalAmount += float64(charge.Amount) / 100.0
 
-	if charge.Status == "successful" {
+	if charge.Status != "successful" {
+		d.summarys.FaultyAmount += float64(charge.Amount)
+		return
+	}
 
-		if existingRanking, ok := d.rankings[donation.Name]; ok {
-			existingRanking.Total += charge.Amount
-		} else {
-			d.rankings[donation.Name] = &entities.DonatorRanking{
-				Name:  donation.Name,
-				Total: charge.Amount,
-			}
-		}
+	d.summarys.SuccessAmount += float64(charge.Amount) / 100.0
+}
 
-		d.summarys.SuccessAmount += float64(charge.Amount) / 100.0
+func (d *Donator) updateRanking(charge *omise.Charge, donation *entities.Donation) {
+	if existingRanking, ok := d.rankings[donation.Name]; ok {
+		existingRanking.Total += charge.Amount
+		return
+	}
 
+	d.rankings[donation.Name] = &entities.DonatorRanking{
+		Name:  donation.Name,
+		Total: charge.Amount,
 	}
 }
 
@@ -117,13 +120,18 @@ func (d *Donator) SummaryDisplay() {
 	p.Printf("%-20s faulty donation: THB %.2f\n\n", "", d.summarys.FaultyAmount)
 	p.Printf("%-20s average per person: THB %.2f\n", "", d.summarys.TotalAmount/float64(len(d.rankings)))
 
-	d.SummaryTopDonation()
+	if len(d.GetList()) < 3 {
+		d.SummaryTopDonation(len(d.GetList()))
+		return
+	}
+
+	d.SummaryTopDonation(3)
 }
 
-func (d *Donator) SummaryTopDonation() {
+func (d *Donator) SummaryTopDonation(num int) {
 	donatorRankings := utils.SortDonatorsByTotal(d.rankings)
 
-	for idx, donator := range donatorRankings[:3] {
+	for idx, donator := range donatorRankings[:num] {
 		if idx == 0 {
 			fmt.Printf("%-20s top donors: %s\n", "", donator.Name)
 			continue
