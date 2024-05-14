@@ -1,6 +1,7 @@
 package donator
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -12,26 +13,26 @@ import (
 	"golang.org/x/text/message"
 )
 
-// current coding : handle error, refactoring and recheck name func, file, etc.
+// current coding : refactoring
 type Donator struct {
 	donationList []*entities.Donation
 	rankings     map[string]*entities.DonatorRanking
 	summarys     entities.DonationSummary
 }
 
-func NewDonator() *Donator {
+func NewDonator() (*Donator, error) {
 	return &Donator{
 		donationList: []*entities.Donation{},
 		rankings:     make(map[string]*entities.DonatorRanking),
 		summarys:     entities.DonationSummary{},
-	}
+	}, nil
 }
 
-func (d *Donator) GetList() []*entities.Donation {
+func (d *Donator) GetDonationList() []*entities.Donation {
 	return d.donationList
 }
 
-func (d *Donator) List(dc string) error {
+func (d *Donator) SplitDonationList(dc string) error {
 
 	rows := strings.Split(dc, "\n")
 
@@ -41,17 +42,17 @@ func (d *Donator) List(dc string) error {
 
 		amountSubunits, err := utils.ConvertToInt(column[1])
 		if err != nil {
-			fmt.Println("Can not convert amount string to int")
+			return errors.New("can not convert amount string to int")
 		}
 
 		expMonth, err := utils.ConvertToInt(column[4])
 		if err != nil {
-			fmt.Println("Can not convert month string to int")
+			return errors.New("can not convert month string to int")
 		}
 
 		expYear, err := utils.ConvertToInt(column[5])
 		if err != nil {
-			fmt.Println("Can not convert year string to int")
+			return errors.New("can not convert year string to int")
 		}
 
 		d.donationList = append(d.donationList, &entities.Donation{
@@ -73,13 +74,13 @@ func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donati
 
 	if err != nil {
 		d.updateFaultyAmount(donation.AmountSubunits)
-		return fmt.Errorf("failed to create token for donator : %w", err)
+		return errors.New("failed to create token for donator")
 	}
 
 	charge, err := om.CreateChargeByToken(donation, card.ID)
 	if err != nil {
 		d.updateFaultyAmount(donation.AmountSubunits)
-		return fmt.Errorf("failed to create charge for donator : %w", err)
+		return errors.New("failed to create charge for donator")
 	}
 
 	d.updateTotalAmount(charge.Amount)

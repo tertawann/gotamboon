@@ -1,6 +1,8 @@
 package omisetor
 
 import (
+	"errors"
+
 	"github.com/gotamboon/modules/entities"
 	"github.com/omise/omise-go"
 	"github.com/omise/omise-go/operations"
@@ -14,8 +16,11 @@ type Omise struct {
 	charge      *omise.Charge
 }
 
-func NewOmiseClient(publicKey, secretKey string) *Omise {
-	client, _ := omise.NewClient(publicKey, secretKey)
+func NewOmiseClient(publicKey, secretKey string) (*Omise, error) {
+	client, err := omise.NewClient(publicKey, secretKey)
+	if err != nil {
+		return nil, errors.New("can't instance omise")
+	}
 
 	return &Omise{
 		publicKey:   publicKey,
@@ -23,7 +28,7 @@ func NewOmiseClient(publicKey, secretKey string) *Omise {
 		omiseClient: client,
 		card:        &omise.Card{},
 		charge:      &omise.Charge{},
-	}
+	}, nil
 }
 
 func (o *Omise) GenerateToken(donator *entities.Donation) (*omise.Card, error) {

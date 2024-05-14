@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -15,26 +16,32 @@ import (
 var wg sync.WaitGroup
 
 func (s *Server) Handler(file string) error {
-	decryptedFile, err := Decrypt(file)
+	decryptedFile, err := decrypt(file)
 	if err != nil {
-		fmt.Println(err)
+		return errors.New("can't decrypted file")
 	}
 
-	_donator := donator.NewDonator()
-	err = _donator.List(decryptedFile)
+	_donator, err := donator.NewDonator()
 	if err != nil {
-		fmt.Println(err)
+		return errors.New("can't instance donator")
 	}
 
-	_omisetor := omisetor.NewOmiseClient(os.Getenv("OMISE_PUBLIC_KEY"), os.Getenv("OMISE_SECRET_KEY"))
+	err = _donator.SplitDonationList(decryptedFile)
+	if err != nil {
+		return errors.New("can't split decrypted file to list")
+	}
+
+	_omisetor, err := omisetor.NewOmiseClient(os.Getenv("OMISE_PUBLIC_KEY"), os.Getenv("OMISE_SECRET_KEY"))
+	if err != nil {
+		return errors.New("can't instance omise")
+	}
 
 	fmt.Println("performing donations...")
 
 	timeStart := time.Now()
-
 	limiter := make(chan int, 5)
 
-	for _, donation := range _donator.GetList() {
+	for _, donation := range _donator.GetDonationList() {
 		wg.Add(1)
 		limiter <- 1
 
@@ -44,7 +51,7 @@ func (s *Server) Handler(file string) error {
 			err := dt.PerformDonations(om, d)
 			if err != nil {
 				<-limiter
-				return fmt.Errorf("error internal server : %w", err)
+				return errors.New("error internal server")
 			}
 
 			<-limiter
@@ -54,29 +61,29 @@ func (s *Server) Handler(file string) error {
 
 	wg.Wait()
 	_donator.SummaryDisplay()
-	_donator.ClearDonationList()
-	fmt.Printf("take time %v\n", time.Since(timeStart))
+	defer _donator.ClearDonationList()
 
+	fmt.Printf("take time %v\n", time.Since(timeStart))
 	return nil
 }
 
-func Decrypt(f string) (string, error) {
+func decrypt(f string) (string, error) {
 
 	file, err := os.Open(f)
 	if err != nil {
-		return "", err
+		return "", errors.New("can't open file")
 	}
 
 	defer file.Close()
 
 	rotReader, err := cipher.NewRot128Reader(file)
 	if err != nil {
-		return "", err
+		return "", errors.New("can't instance rot128 algorithm")
 	}
 
 	decrypted, err := rotReader.ReadAll(make([]byte, 4096))
 	if err != nil {
-		return "", err
+		return "", errors.New("can't decrypt file")
 	}
 
 	return decrypted, nil
