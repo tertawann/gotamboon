@@ -13,7 +13,6 @@ import (
 	"golang.org/x/text/message"
 )
 
-// current coding : refactoring
 type Donator struct {
 	donationList []*entities.Donation
 	rankings     map[string]*entities.DonatorRanking
