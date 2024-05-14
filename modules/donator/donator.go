@@ -10,8 +10,6 @@ import (
 	"github.com/gotamboon/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-
-	"github.com/omise/omise-go"
 )
 
 // current coding : handle error, refactoring and recheck name func, file, etc.
@@ -30,7 +28,7 @@ func NewDonator() *Donator {
 }
 
 func (d *Donator) GetList() []*entities.Donation {
-	return d.donationList[:3]
+	return d.donationList
 }
 
 func (d *Donator) List(dc string) error {
@@ -72,56 +70,60 @@ func (d *Donator) List(dc string) error {
 func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donation) error {
 
 	card, err := om.GenerateToken(donation)
+
 	if err != nil {
-		return err
+		d.updateFaultyAmount(donation.AmountSubunits)
+		return fmt.Errorf("failed to create token for donator : %w", err)
 	}
 
 	charge, err := om.CreateChargeByToken(donation, card.ID)
-
 	if err != nil {
-		return fmt.Errorf("%s failed to generate token for donator", donation.Name)
+		d.updateFaultyAmount(donation.AmountSubunits)
+		return fmt.Errorf("failed to create charge for donator : %w", err)
 	}
 
-	d.updateSummary(charge)
-	d.updateRanking(charge, donation)
+	d.updateTotalAmount(charge.Amount)
+	d.updateSucessAmount(charge.Amount)
+	d.updateRanking(charge.Amount, donation)
 
 	return nil
 }
 
-func (d *Donator) updateSummary(charge *omise.Charge) {
-	d.summarys.TotalAmount += float64(charge.Amount) / 100.0
-
-	if charge.Status != "successful" {
-		d.summarys.FaultyAmount += float64(charge.Amount)
-		return
-	}
-
-	d.summarys.SuccessAmount += float64(charge.Amount) / 100.0
+func (d *Donator) updateTotalAmount(amount int64) {
+	d.summarys.TotalAmount += float64(amount) / 100.0
 }
 
-func (d *Donator) updateRanking(charge *omise.Charge, donation *entities.Donation) {
+func (d *Donator) updateSucessAmount(amount int64) {
+	d.summarys.SuccessAmount += float64(amount) / 100.0
+}
+
+func (d *Donator) updateFaultyAmount(amount int64) {
+	d.summarys.FaultyAmount += float64(amount) / 100.0
+}
+
+func (d *Donator) updateRanking(amount int64, donation *entities.Donation) {
 	if existingRanking, ok := d.rankings[donation.Name]; ok {
-		existingRanking.Total += charge.Amount
+		existingRanking.Total += float64(amount) / 100.0
 		return
 	}
 
 	d.rankings[donation.Name] = &entities.DonatorRanking{
 		Name:  donation.Name,
-		Total: charge.Amount,
+		Total: float64(amount) / 100.0,
 	}
 }
 
 func (d *Donator) SummaryDisplay() {
-	p := message.NewPrinter(language.English)
 
+	p := message.NewPrinter(language.English)
 	p.Printf("done.\n\n")
 	p.Printf("%-20s total received: THB %.2f\n", "", d.summarys.TotalAmount)
 	p.Printf("%-20s successfully donated: THB %.2f\n", "", d.summarys.SuccessAmount)
 	p.Printf("%-20s faulty donation: THB %.2f\n\n", "", d.summarys.FaultyAmount)
-	p.Printf("%-20s average per person: THB %.2f\n", "", d.summarys.TotalAmount/float64(len(d.rankings)))
+	p.Printf("%-20s average per person: THB %.2f\n", "", d.calAvgAmount())
 
-	if len(d.GetList()) < 3 {
-		d.SummaryTopDonation(len(d.GetList()))
+	if len(d.rankings) < 3 {
+		d.SummaryTopDonation(len(d.rankings))
 		return
 	}
 
@@ -139,4 +141,16 @@ func (d *Donator) SummaryTopDonation(num int) {
 
 		fmt.Printf("%-32s %s\n", "", donator.Name)
 	}
+}
+
+func (d *Donator) calAvgAmount() float64 {
+	if len(d.rankings) != 0 {
+		return d.summarys.TotalAmount / float64(len(d.rankings))
+	}
+
+	return 0.00
+}
+
+func (d *Donator) ClearDonationList() {
+	d.donationList = nil
 }

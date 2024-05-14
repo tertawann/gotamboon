@@ -20,39 +20,42 @@ func (s *Server) Handler(file string) error {
 		fmt.Println(err)
 	}
 
-	donator := donator.NewDonator()
-	err = donator.List(decryptedFile)
+	_donator := donator.NewDonator()
+	err = _donator.List(decryptedFile)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	omiseTor := omisetor.NewOmiseClient(os.Getenv("OMISE_PUBLIC_KEY"), os.Getenv("OMISE_SECRET_KEY"))
+	_omisetor := omisetor.NewOmiseClient(os.Getenv("OMISE_PUBLIC_KEY"), os.Getenv("OMISE_SECRET_KEY"))
 
 	fmt.Println("performing donations...")
 
-	limiter := time.NewTicker(260 * time.Millisecond)
-	defer limiter.Stop()
+	timeStart := time.Now()
 
-	for _, donation := range donator.GetList() {
+	limiter := make(chan int, 5)
+
+	for _, donation := range _donator.GetList() {
 		wg.Add(1)
-		go createPerformDonations(omiseTor, donation, donator, &wg, limiter)
+		limiter <- 1
+
+		go func(om *omisetor.Omise, d *entities.Donation, dt *donator.Donator) error {
+			defer wg.Done()
+
+			err := dt.PerformDonations(om, d)
+			if err != nil {
+				<-limiter
+				return fmt.Errorf("error internal server : %w", err)
+			}
+
+			<-limiter
+			return nil
+		}(_omisetor, donation, _donator)
 	}
 
 	wg.Wait()
-	donator.SummaryDisplay()
-
-	return nil
-}
-
-func createPerformDonations(om *omisetor.Omise, donation *entities.Donation, dt *donator.Donator, wg *sync.WaitGroup, limit *time.Ticker) error {
-	defer wg.Done()
-
-	<-limit.C
-	err := dt.PerformDonations(om, donation)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+	_donator.SummaryDisplay()
+	_donator.ClearDonationList()
+	fmt.Printf("take time %v\n", time.Since(timeStart))
 
 	return nil
 }

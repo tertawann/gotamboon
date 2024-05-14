@@ -19,5 +19,5 @@ type DonationSummary struct {
 
 type DonatorRanking struct {
 	Name  string
-	Total int64
+	Total float64
 }
