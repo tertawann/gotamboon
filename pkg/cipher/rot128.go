@@ -17,6 +17,17 @@ func NewRot128Reader(r io.Reader) (*Rot128Reader, error) {
 	return &Rot128Reader{reader: r}, nil
 }
 
+func (r *Rot128Reader) Read(p []byte) (int, error) {
+
+	n, err := r.reader.Read(p)
+	if err != nil {
+		return n, err
+	}
+
+	rot128(p[:n])
+	return n, nil
+}
+
 func (r *Rot128Reader) ReadAll(p []byte) (string, error) {
 	var decrypted string
 

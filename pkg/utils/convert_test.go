@@ -6,10 +6,10 @@ import (
 	r "github.com/stretchr/testify/require"
 )
 
-func TestConvertToInt(t *testing.T) {
+func TestConvertStringToInt(t *testing.T) {
 
-	result, err := ConvertToInt("1")
-	r.NoError(t, err,"Can")
+	result, err := ConvertStringToInt("1")
+	r.NoError(t, err, "Can")
 	r.Equal(t, 1, result, "Should be integer")
 	r.NotEqual(t, "1", result, "Should be string")
 }

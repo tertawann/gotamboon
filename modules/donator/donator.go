@@ -40,17 +40,17 @@ func (d *Donator) SplitDonationList(dc string) error {
 
 		column := strings.Split(row, ",")
 
-		amountSubunits, err := utils.ConvertToInt(column[1])
+		amountSubunits, err := utils.ConvertStringToInt(column[1])
 		if err != nil {
 			return errors.New("can not convert amount string to int")
 		}
 
-		expMonth, err := utils.ConvertToInt(column[4])
+		expMonth, err := utils.ConvertStringToInt(column[4])
 		if err != nil {
 			return errors.New("can not convert month string to int")
 		}
 
-		expYear, err := utils.ConvertToInt(column[5])
+		expYear, err := utils.ConvertStringToInt(column[5])
 		if err != nil {
 			return errors.New("can not convert year string to int")
 		}
