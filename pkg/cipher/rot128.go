@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"errors"
 	"io"
 )
 
@@ -21,7 +22,7 @@ func (r *Rot128Reader) Read(p []byte) (int, error) {
 
 	n, err := r.reader.Read(p)
 	if err != nil {
-		return n, err
+		return n, errors.New("can't read byte text")
 	}
 
 	rot128(p[:n])

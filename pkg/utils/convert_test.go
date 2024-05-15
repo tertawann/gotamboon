@@ -10,10 +10,19 @@ import (
 
 func TestConvertStringToInt(t *testing.T) {
 
-	result, err := ConvertStringToInt("1")
-	r.NoError(t, err, "Can")
-	r.Equal(t, 1, result, "Should be integer")
-	r.NotEqual(t, "1", result, "Should be string")
+	t.Run("success", func(t *testing.T) {
+
+		result, _ := ConvertStringToInt("1")
+		r.Equal(t, 1, result)
+
+	})
+	t.Run("can't convert string to int", func(t *testing.T) {
+
+		_, err := ConvertStringToInt("abccc")
+		r.Equal(t, "can't convert string to int", err.Error())
+
+	})
+
 }
 func TestConvertMapToSlice(t *testing.T) {
 

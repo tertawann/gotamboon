@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gotamboon/modules/entities"
@@ -9,7 +10,7 @@ import (
 func ConvertStringToInt(input string) (int, error) {
 	num, err := strconv.Atoi(input)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("can't convert string to int")
 	}
 
 	return num, nil

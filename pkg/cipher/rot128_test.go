@@ -17,7 +17,7 @@ func TestRot128Reader_Read(t *testing.T) {
 	r.NoError(t, err)
 	r.NotNil(t, reader)
 
-	buf := make([]byte, 3, 3)
+	buf := make([]byte, 3)
 	n, err := reader.Read(buf)
 	r.NoError(t, err)
 	r.Equal(t, 3, n)
@@ -33,7 +33,7 @@ func TestRot128Reader_Reversible(t *testing.T) {
 	r.NoError(t, err)
 	r.NotNil(t, reader)
 
-	buf := make([]byte, 3, 3)
+	buf := make([]byte, 3)
 	n, err := reader.Read(buf)
 	r.NoError(t, err)
 	r.Equal(t, 3, n)
