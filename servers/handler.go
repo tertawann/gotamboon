@@ -13,8 +13,6 @@ import (
 	"github.com/gotamboon/pkg/cipher"
 )
 
-var wg sync.WaitGroup
-
 func (s *Server) Handler(file string) error {
 	decryptedFile, err := decrypt(file)
 	if err != nil {
@@ -38,8 +36,12 @@ func (s *Server) Handler(file string) error {
 
 	fmt.Println("performing donations...")
 
-	timeStart := time.Now()
-	limiter := make(chan int, 5)	
+	var (
+		wg        sync.WaitGroup
+		timeStart = time.Now()
+		limiter   = make(chan int, 5)
+		errCh     = make(chan error, 1)
+	)
 
 	for _, donation := range _donator.GetDonationList() {
 		wg.Add(1)
@@ -51,17 +53,29 @@ func (s *Server) Handler(file string) error {
 			err := dt.PerformDonations(om, d)
 			if err != nil {
 				<-limiter
-				return errors.New("error internal server")
+				errCh <- err
 			}
 
 			<-limiter
 			return nil
 		}(_omisetor, donation, _donator)
+
+		select {
+		case err := <-errCh:
+			defer _donator.ClearAllMemory()
+
+			fmt.Println("found error : ", err)
+			_donator.SummaryDisplay()
+
+			fmt.Printf("take time %v\n", time.Since(timeStart))
+			return err
+		default:
+		}
 	}
 
 	wg.Wait()
+	defer _donator.ClearAllMemory()
 	_donator.SummaryDisplay()
-	defer _donator.ClearDonationList()
 
 	fmt.Printf("take time %v\n", time.Since(timeStart))
 	return nil

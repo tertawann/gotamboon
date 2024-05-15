@@ -68,17 +68,14 @@ func (d *Donator) SplitDonationList(dc string) error {
 }
 
 func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donation) error {
-	d.updateTotalAmount(donation.AmountSubunits)
 
 	card, err := om.GenerateToken(donation)
 	if err != nil {
-		d.updateFaultyAmount(donation.AmountSubunits)
 		return errors.New("failed to create token for donator")
 	}
 
 	charge, err := om.CreateChargeByToken(donation, card.ID)
 	if err != nil {
-		d.updateFaultyAmount(donation.AmountSubunits)
 		return errors.New("failed to create charge for donator")
 	}
 
@@ -89,16 +86,8 @@ func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donati
 	return nil
 }
 
-func (d *Donator) updateTotalAmount(amount int64) {
-	d.summarys.TotalAmount += float64(amount) / 100.0
-}
-
 func (d *Donator) updateSucessAmount(amount int64) {
 	d.summarys.SuccessAmount += float64(amount) / 100.0
-}
-
-func (d *Donator) updateFaultyAmount(amount int64) {
-	d.summarys.FaultyAmount += float64(amount) / 100.0
 }
 
 func (d *Donator) updateRanking(amount int64, donation *entities.Donation) {
@@ -117,9 +106,9 @@ func (d *Donator) SummaryDisplay() {
 
 	p := message.NewPrinter(language.English)
 	p.Printf("done.\n\n")
-	p.Printf("%-20s total received: THB %.2f\n", "", d.summarys.TotalAmount)
+	p.Printf("%-20s total received: THB %.2f\n", "", d.summaryTotalAmount())
 	p.Printf("%-20s successfully donated: THB %.2f\n", "", d.summarys.SuccessAmount)
-	p.Printf("%-20s faulty donation: THB %.2f\n\n", "", d.summarys.FaultyAmount)
+	p.Printf("%-20s faulty donation: THB %.2f\n\n", "", d.summaryTotalAmount()-d.summarys.SuccessAmount)
 	p.Printf("%-20s average per person: THB %.2f\n", "", d.calAvgAmount())
 
 	if len(d.rankings) < 3 {
@@ -143,14 +132,27 @@ func (d *Donator) SummaryTopDonation(num int) {
 	}
 }
 
+func (d *Donator) summaryTotalAmount() float64 {
+
+	total := 0.0
+	for _, donation := range d.GetDonationList() {
+		total += float64(donation.AmountSubunits) / 100.0
+	}
+
+	return total
+}
+
 func (d *Donator) calAvgAmount() float64 {
 	if len(d.rankings) != 0 {
-		return d.summarys.TotalAmount / float64(len(d.rankings))
+		return d.summaryTotalAmount() / float64(len(d.rankings))
 	}
 
 	return 0.00
 }
 
-func (d *Donator) ClearDonationList() {
+func (d *Donator) ClearAllMemory() {
+	d.summarys.FaultyAmount = 0.0
+	d.summarys.SuccessAmount = 0.0
+	d.summarys.TotalAmount = 0.0
 	d.donationList = nil
 }
