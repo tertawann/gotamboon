@@ -79,7 +79,6 @@ func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donati
 		return errors.New("failed to create charge for donator")
 	}
 
-	fmt.Printf("%s success\n", donation.Name)
 	d.updateSucessAmount(charge.Amount)
 	d.updateRanking(charge.Amount, donation)
 
