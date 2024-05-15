@@ -39,7 +39,7 @@ func (s *Server) Handler(file string) error {
 	fmt.Println("performing donations...")
 
 	timeStart := time.Now()
-	limiter := make(chan int, 5)
+	limiter := make(chan int, 5)	
 
 	for _, donation := range _donator.GetDonationList() {
 		wg.Add(1)

@@ -68,9 +68,9 @@ func (d *Donator) SplitDonationList(dc string) error {
 }
 
 func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donation) error {
+	d.updateTotalAmount(donation.AmountSubunits)
 
 	card, err := om.GenerateToken(donation)
-
 	if err != nil {
 		d.updateFaultyAmount(donation.AmountSubunits)
 		return errors.New("failed to create token for donator")
@@ -82,7 +82,7 @@ func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donati
 		return errors.New("failed to create charge for donator")
 	}
 
-	d.updateTotalAmount(charge.Amount)
+	fmt.Printf("%s success\n", donation.Name)
 	d.updateSucessAmount(charge.Amount)
 	d.updateRanking(charge.Amount, donation)
 
