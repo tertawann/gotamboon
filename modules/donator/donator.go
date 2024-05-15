@@ -131,7 +131,7 @@ func (d *Donator) SummaryDisplay() {
 }
 
 func (d *Donator) SummaryTopDonation(num int) {
-	donatorRankings := utils.SortDonatorsByTotal(d.rankings)
+	donatorRankings := utils.SortDescDonatorsByTotal(d.rankings)
 
 	for idx, donator := range donatorRankings[:num] {
 		if idx == 0 {

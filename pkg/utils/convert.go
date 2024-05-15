@@ -1,6 +1,10 @@
 package utils
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/gotamboon/modules/entities"
+)
 
 func ConvertStringToInt(input string) (int, error) {
 	num, err := strconv.Atoi(input)
@@ -9,4 +13,14 @@ func ConvertStringToInt(input string) (int, error) {
 	}
 
 	return num, nil
+}
+
+func ConvertMapToSlice(maps map[string]*entities.DonatorRanking, size int) []*entities.DonatorRanking {
+	slices := make([]*entities.DonatorRanking, 0, size)
+
+	for _, val := range maps {
+		slices = append(slices, val)
+	}
+
+	return slices
 }
