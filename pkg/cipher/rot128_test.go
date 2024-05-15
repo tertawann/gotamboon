@@ -23,6 +23,17 @@ func TestRot128Reader_Read(t *testing.T) {
 	r.Equal(t, 3, n)
 	r.Equal(t, ReverseTestBuffer, buf)
 }
+func TestRot128Reader_ReadAll(t *testing.T) {
+	reader, err := NewRot128Reader(bytes.NewBuffer(TestBuffer))
+	r.NoError(t, err)
+	r.NotNil(t, reader)
+
+	buf := make([]byte, 3)
+	n, err := reader.ReadAll(buf)
+	r.NoError(t, err)
+	r.Equal(t, string("\x00\x01\x02"), n)
+	r.Equal(t, ReverseTestBuffer, buf)
+}
 
 func TestRot128Reader_Reversible(t *testing.T) {
 	reader, err := NewRot128Reader(bytes.NewBuffer(TestBuffer))
