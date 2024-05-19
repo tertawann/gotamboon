@@ -69,7 +69,6 @@ func (s *Server) Handler(file string) error {
 			fmt.Printf("take time %v\n", time.Since(timeStart))
 			return err
 		default:
-			fmt.Println("success")
 		}
 	}
 

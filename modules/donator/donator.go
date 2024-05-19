@@ -38,7 +38,6 @@ func (d *Donator) SplitDonationList(dc string) error {
 		return errors.New("invalid input string")
 	}
 
-	fmt.Println(len(rows) - 1)
 	for _, row := range rows[1 : len(rows)-1] {
 
 		column := strings.Split(row, ",")
