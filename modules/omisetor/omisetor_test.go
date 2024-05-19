@@ -38,6 +38,6 @@ func TestCreateChargeByToken(t *testing.T) {
 
 		_, err := _omistor.CreateChargeByToken(exDonationList, "testset")
 
-		assert.Equal(t, nil, err)
+		assert.Equal(t, "(404/not_found) token testset was not found", err.Error())
 	})
 }

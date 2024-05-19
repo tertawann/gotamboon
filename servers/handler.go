@@ -24,8 +24,7 @@ func (s *Server) Handler(file string) error {
 		return errors.New("can't instance donator")
 	}
 
-	err = _donator.SplitDonationList(decryptedFile)
-	if err != nil {
+	if err = _donator.SplitDonationList(decryptedFile); err != nil {
 		return errors.New("can't split decrypted file to list")
 	}
 
@@ -70,6 +69,7 @@ func (s *Server) Handler(file string) error {
 			fmt.Printf("take time %v\n", time.Since(timeStart))
 			return err
 		default:
+			fmt.Println("success")
 		}
 	}
 

@@ -34,6 +34,9 @@ func (d *Donator) GetDonationList() []*entities.Donation {
 func (d *Donator) SplitDonationList(dc string) error {
 
 	rows := strings.Split(dc, "\n")
+	if len(rows) < 2 {
+		return errors.New("invalid input string")
+	}
 
 	fmt.Println(len(rows) - 1)
 	for _, row := range rows[1 : len(rows)-1] {
@@ -63,9 +66,11 @@ func (d *Donator) SplitDonationList(dc string) error {
 			ExpMonth:       time.Month(expMonth),
 			ExpYear:        expYear,
 		})
+
 	}
 
 	return nil
+
 }
 
 func (d *Donator) PerformDonations(om *omisetor.Omise, donation *entities.Donation) error {
