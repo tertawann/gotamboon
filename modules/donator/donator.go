@@ -35,7 +35,8 @@ func (d *Donator) SplitDonationList(dc string) error {
 
 	rows := strings.Split(dc, "\n")
 
-	for _, row := range rows[1:] {
+	fmt.Println(len(rows) - 1)
+	for _, row := range rows[1 : len(rows)-1] {
 
 		column := strings.Split(row, ",")
 
